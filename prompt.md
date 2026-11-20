@@ -1,0 +1,15 @@
+# Prompt for Codex: Curious Minds Club Chatbot
+
+Create a Google Colab notebook implementing a topic-locked chatbot for teenagers using LangGraph, Supabase Postgres and Gradio.
+
+- Install `langgraph`, `langchain`, `langchain-openai`, `langgraph-checkpoint-postgres`, `psycopg[binary]` and `gradio`. Load `OPENAI_API_KEY` and `SUPABASE_DB_URL` with Colab `userdata.get`; never put secrets in the notebook or outputs. Use `init_chat_model("openai:gpt-6-luna")`, with the model name defined once.
+- Support Astronomy, Cooking, Football, World Geography and Python Programming. Define a state with `messages` using `add_messages` and `topic` without a reducer.
+- Build exactly one node `chatbot` and the graph `START → chatbot → END`. Inside the node, construct a fresh `SystemMessage` using the current `state["topic"]`. Instruct the model to answer questions about that club; politely refuse unrelated questions, name the current club and suggest switching. Judge the substance of mixed-topic requests and refuse questions about previous clubs after switching. Answer in the user's language. Make exactly one model call per user message and return only its reply; do not save the system message.
+- Connect using `psycopg.connect` with `autocommit=True`, `row_factory=dict_row`, and `prepare_threshold=0`; create `PostgresSaver`, call `setup()`, and compile the graph with it. Keep the connection alive. Show the graph with `draw_mermaid_png()`.
+- Before the UI, include the assignment's four `ask` calls on a fixed thread `test-1`: pancakes in Cooking, World Cup in Cooking, World Cup in Football, and the old pancake follow-up in Football. Show the message count and saved topic; rerunning appends to the same thread.
+- Build a `gr.Blocks` UI with a topic dropdown, a chat window, a message box, Send and New conversation buttons, and a dropdown of saved conversations. Assign a UUID to each new conversation; clear the chat on New. Read the saved list from database checkpoints, with labels including the current topic, the first question and a short ID. A new empty conversation appears in the list after its first message. Selecting a conversation restores its messages and topic using `graph.get_state` and subsequent messages use the same ID. Changing topic retains the conversation and saves the new topic immediately for existing threads; the next message uses it. The UI sends only the new message and topic to `graph.invoke`.
+- Launch in Colab with a share link; explain that it must not be posted and should be stopped after use. Include instructions to test topic switching, persistence after runtime restart, inspect checkpoint tables and write a 4–6 sentence reflection based on real observations.
+
+## Changes made during implementation
+
+The topic change is persisted immediately for an existing conversation using `graph.update_state`, so reopening before the next message restores the selected club. New conversations are listed after their first message, because there is no checkpoint before then.
